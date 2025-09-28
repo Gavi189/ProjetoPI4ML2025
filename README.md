@@ -2,6 +2,8 @@ Projeto Integrador 4 - Machine Learning para Previsão de tempo enfase em inunda
 
 Projeto em Python para análise e previsão de variáveis meteorológicas (chuva, temperatura, umidade, etc.) a partir de dados históricos.
 
+Fonte de dados para treinamento do modelo: https://portal.inmet.gov.br/dadoshistoricos
+
 ## Como começar
 
 1. Clone o repositório:
