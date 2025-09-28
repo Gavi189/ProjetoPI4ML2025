@@ -8,8 +8,8 @@ Fonte de dados para treinamento do modelo: https://portal.inmet.gov.br/dadoshist
 
 1. Clone o repositório:
    ```bash
-   git clone https://github.com/seu-usuario/seu-repo.git
-   cd seu-repo
+   git clone https://github.com/gabrielkaique2/PI4-MachineLearning-2025.git
+   cd PI4-MachineLearning-2025
 2. Preparando .venv:
    Esse comando é indicados ser realziado dentro do terminal na sua IDE de preferência.
    ```bash
