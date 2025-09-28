@@ -10,3 +10,9 @@ Fonte de dados para treinamento do modelo: https://portal.inmet.gov.br/dadoshist
    ```bash
    git clone https://github.com/seu-usuario/seu-repo.git
    cd seu-repo
+2. Preparando .venv:
+   Esse comando é indicados ser realziado dentro do terminal na sua IDE de preferência.
+   ```bash
+   .venv\Scripts\activate     # Windows
+   pip install -r requirements.txt   #Instalar os pacotes necessários para execução
+
