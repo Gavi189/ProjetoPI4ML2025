@@ -1,0 +1,35 @@
+================================================================================
+RESUMO DAS FEATURES CRIADAS PELO PIPELINE
+================================================================================
+
+Dataset Básico:
+  - Registros: 26304
+  - Features: 41
+
+Dataset Avançado:
+  - Registros: 0
+  - Features: 62
+
+Features Temporais:
+  - ano
+  - dia
+  - dia_ano
+  - dia_semana
+  - estacao
+  - fim_semana
+  - hora
+  - hora_cos
+  - hora_sin
+  - mes
+  - mes_cos
+  - mes_sin
+  - periodo_dia
+  - radiacao_norm
+  - semana_ano
+
+Features Meteorológicas:
+  - amplitude_termica
+  - indice_desconforto
+  - radiacao_norm
+  - spread_temp_orvalho
+  - variacao_umidade
