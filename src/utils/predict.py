@@ -34,6 +34,11 @@ class WeatherPredictor:
         self.modelo_regressao = None
         self.features_esperadas = None
         
+        # Obter diretórios do projeto
+        self.project_root = Path(__file__).resolve().parent.parent.parent
+        self.models_dir = self.project_root / 'data' / 'models'
+        self.plots_dir = self.project_root / 'data' / 'plots'
+        
         # Carregar modelos
         if caminho_modelo_class:
             self.carregar_modelo_classificacao(caminho_modelo_class)
@@ -51,12 +56,23 @@ class WeatherPredictor:
         Carrega modelo de classificação do disco
         
         Args:
-            caminho: Caminho para o arquivo .joblib
+            caminho: Caminho para o arquivo .joblib (pode ser relativo ou absoluto)
         """
-        self._log(f"📂 Carregando modelo de classificação: {caminho}")
+        # Converter para Path e resolver caminho
+        caminho_path = Path(caminho)
+        
+        # Se for caminho relativo, usar a partir do project_root
+        if not caminho_path.is_absolute():
+            caminho_path = self.project_root / caminho
+        
+        self._log(f"📂 Carregando modelo de classificação...")
+        self._log(f"   Caminho: {caminho_path}")
+        
+        if not caminho_path.exists():
+            raise FileNotFoundError(f"Modelo não encontrado: {caminho_path}")
         
         try:
-            self.modelo_classificacao = joblib.load(caminho)
+            self.modelo_classificacao = joblib.load(caminho_path)
             
             # Extrair features esperadas
             if hasattr(self.modelo_classificacao, 'feature_names_in_'):
@@ -76,10 +92,20 @@ class WeatherPredictor:
         Args:
             caminho: Caminho para o arquivo .joblib
         """
-        self._log(f"📂 Carregando modelo de regressão: {caminho}")
+        # Converter para Path e resolver caminho
+        caminho_path = Path(caminho)
+        
+        if not caminho_path.is_absolute():
+            caminho_path = self.project_root / caminho
+        
+        self._log(f"📂 Carregando modelo de regressão...")
+        self._log(f"   Caminho: {caminho_path}")
+        
+        if not caminho_path.exists():
+            raise FileNotFoundError(f"Modelo não encontrado: {caminho_path}")
         
         try:
-            self.modelo_regressao = joblib.load(caminho)
+            self.modelo_regressao = joblib.load(caminho_path)
             self._log(f"   ✅ Modelo de regressão carregado")
         except Exception as e:
             self._log(f"   ❌ Erro ao carregar modelo: {e}")
@@ -95,34 +121,79 @@ class WeatherPredictor:
         Returns:
             DataFrame com features alinhadas
         """
-        self._log("🔧 Preparando features para previsão...")
+        self._log("\n🔧 Preparando features para previsão...")
+        
+        # Criar cópia para não modificar original
+        df_work = df.copy()
+        
+        # Codificar variáveis categóricas (estacao, periodo_dia, etc.)
+        from sklearn.preprocessing import LabelEncoder
+        
+        colunas_categoricas = df_work.select_dtypes(include=['object']).columns
+        if len(colunas_categoricas) > 0:
+            self._log(f"   🔤 Codificando {len(colunas_categoricas)} colunas categóricas...")
+            
+            for col in colunas_categoricas:
+                if col in df_work.columns:
+                    try:
+                        le = LabelEncoder()
+                        df_work[col] = le.fit_transform(df_work[col].astype(str))
+                        self._log(f"      • {col}: {len(le.classes_)} classes")
+                    except Exception as e:
+                        self._log(f"      ⚠️ Erro ao codificar {col}: {e}")
+                        # Remover coluna problemática
+                        df_work = df_work.drop(col, axis=1)
         
         if self.features_esperadas is None:
             self._log("   ⚠️ Features esperadas não definidas. Usando todas as colunas numéricas.")
-            return df.select_dtypes(include=[np.number])
+            return df_work.select_dtypes(include=[np.number])
         
         # Selecionar apenas features que o modelo espera
-        features_faltando = [f for f in self.features_esperadas if f not in df.columns]
-        features_extras = [f for f in df.columns if f not in self.features_esperadas and f in df.select_dtypes(include=[np.number]).columns]
+        features_faltando = [f for f in self.features_esperadas if f not in df_work.columns]
+        features_extras = [f for f in df_work.columns if f not in self.features_esperadas]
         
         if features_faltando:
-            self._log(f"   ⚠️ {len(features_faltando)} features faltando: {features_faltando[:5]}...")
+            self._log(f"   ⚠️ {len(features_faltando)} features faltando")
+            if len(features_faltando) <= 5:
+                self._log(f"      {features_faltando}")
+            else:
+                self._log(f"      Primeiras 5: {features_faltando[:5]}")
+            
             # Adicionar features faltando com valor 0
             for feat in features_faltando:
-                df[feat] = 0
+                df_work[feat] = 0
+                if len(features_faltando) <= 5:
+                    self._log(f"      ➕ Adicionando '{feat}' = 0")
         
         if features_extras:
-            self._log(f"   ℹ️ {len(features_extras)} features extras serão ignoradas")
+            n_extras_numericos = len([f for f in features_extras 
+                                     if f in df_work.select_dtypes(include=[np.number]).columns])
+            if n_extras_numericos > 0:
+                self._log(f"   ℹ️ {n_extras_numericos} features extras (numéricas) serão ignoradas")
         
         # Retornar apenas as features na ordem correta
-        df_aligned = df[self.features_esperadas].copy()
+        df_aligned = df_work[self.features_esperadas].copy()
+        
+        # Verificar se ainda há colunas não-numéricas
+        non_numeric = df_aligned.select_dtypes(exclude=[np.number]).columns
+        if len(non_numeric) > 0:
+            self._log(f"   ⚠️ ATENÇÃO: {len(non_numeric)} colunas ainda não-numéricas: {list(non_numeric)}")
+            self._log(f"   🔧 Convertendo para numérico com coerção...")
+            
+            for col in non_numeric:
+                df_aligned[col] = pd.to_numeric(df_aligned[col], errors='coerce')
         
         # Preencher NaN com 0
-        if df_aligned.isna().any().any():
-            self._log("   💉 Preenchendo valores NaN com 0...")
+        nan_count = df_aligned.isna().sum().sum()
+        if nan_count > 0:
+            self._log(f"   💉 Preenchendo {nan_count} valores NaN com 0...")
             df_aligned = df_aligned.fillna(0)
         
-        self._log(f"   ✅ Features preparadas: {len(df_aligned.columns)} colunas")
+        # Verificação final: garantir que tudo é numérico
+        dtypes_final = df_aligned.dtypes.value_counts()
+        self._log(f"   ✅ Features preparadas: {len(df_aligned.columns)} colunas × {len(df_aligned)} linhas")
+        self._log(f"   📊 Tipos finais: {dict(dtypes_final)}")
+        
         return df_aligned
     
     def prever_classificacao(self, df: pd.DataFrame) -> Dict[str, np.ndarray]:
@@ -138,7 +209,7 @@ class WeatherPredictor:
         if self.modelo_classificacao is None:
             raise ValueError("Modelo de classificação não carregado!")
         
-        self._log("🔮 Fazendo previsão de classificação...")
+        self._log("\n🔮 Fazendo previsão de classificação...")
         
         # Preparar features
         X = self.preparar_features(df)
@@ -147,8 +218,11 @@ class WeatherPredictor:
         predicoes = self.modelo_classificacao.predict(X)
         probabilidades = self.modelo_classificacao.predict_proba(X)
         
+        n_chuva = predicoes.sum()
+        pct_chuva = (n_chuva / len(predicoes)) * 100
+        
         self._log(f"   ✅ {len(predicoes)} previsões realizadas")
-        self._log(f"   📊 Resumo: {predicoes.sum()} eventos de chuva previstos ({predicoes.sum()/len(predicoes)*100:.1f}%)")
+        self._log(f"   📊 Eventos de chuva previstos: {n_chuva} ({pct_chuva:.1f}%)")
         
         return {
             'predicoes': predicoes,
@@ -170,7 +244,7 @@ class WeatherPredictor:
         if self.modelo_regressao is None:
             raise ValueError("Modelo de regressão não carregado!")
         
-        self._log("🔮 Fazendo previsão de regressão...")
+        self._log("\n🔮 Fazendo previsão de regressão...")
         
         # Preparar features
         X = self.preparar_features(df)
@@ -182,8 +256,8 @@ class WeatherPredictor:
         predicoes = np.maximum(predicoes, 0)
         
         self._log(f"   ✅ {len(predicoes)} previsões realizadas")
-        self._log(f"   📊 Média prevista: {predicoes.mean():.2f} mm")
-        self._log(f"   📊 Máximo previsto: {predicoes.max():.2f} mm")
+        self._log(f"   📊 Precipitação média prevista: {predicoes.mean():.2f} mm")
+        self._log(f"   📊 Precipitação máxima prevista: {predicoes.max():.2f} mm")
         
         return predicoes
     
@@ -197,9 +271,9 @@ class WeatherPredictor:
         Returns:
             DataFrame com previsões adicionadas
         """
-        self._log("=" * 80)
-        self._log("🚀 INICIANDO PREVISÃO COMPLETA")
-        self._log("=" * 80)
+        self._log("\n" + "="*80)
+        self._log("🚀 PREVISÃO COMPLETA")
+        self._log("="*80)
         
         df_result = df.copy()
         
@@ -211,11 +285,11 @@ class WeatherPredictor:
         
         # Regressão
         if self.modelo_regressao:
-            df_result['quantidade_chuva_prevista'] = self.prever_regressao(df)
+            df_result['quantidade_chuva_prevista_mm'] = self.prever_regressao(df)
         
-        self._log("=" * 80)
-        self._log("✅ PREVISÃO COMPLETA CONCLUÍDA")
-        self._log("=" * 80)
+        self._log("\n" + "="*80)
+        self._log("✅ PREVISÃO CONCLUÍDA")
+        self._log("="*80)
         
         return df_result
 
@@ -226,6 +300,11 @@ class ModelEvaluator:
     def __init__(self, verbose: bool = True):
         self.verbose = verbose
         self.metricas = {}
+        
+        # Obter diretórios do projeto
+        self.project_root = Path(__file__).resolve().parent.parent.parent
+        self.plots_dir = self.project_root / 'data' / 'plots'
+        self.plots_dir.mkdir(parents=True, exist_ok=True)
     
     def _log(self, message: str):
         if self.verbose:
@@ -248,7 +327,9 @@ class ModelEvaluator:
                                      f1_score, confusion_matrix, classification_report,
                                      roc_auc_score)
         
-        self._log("📊 Avaliando modelo de classificação...")
+        self._log("\n" + "="*80)
+        self._log("📊 AVALIAÇÃO DO MODELO DE CLASSIFICAÇÃO")
+        self._log("="*80)
         
         metricas = {
             'accuracy': accuracy_score(y_true, y_pred),
@@ -265,24 +346,29 @@ class ModelEvaluator:
             except:
                 pass
         
-        # Imprimir relatório
-        self._log("\n" + "=" * 80)
-        self._log("📈 MÉTRICAS DE CLASSIFICAÇÃO")
-        self._log("=" * 80)
-        self._log(f"Accuracy:  {metricas['accuracy']:.4f}")
-        self._log(f"Precision: {metricas['precision']:.4f}")
-        self._log(f"Recall:    {metricas['recall']:.4f}")
-        self._log(f"F1-Score:  {metricas['f1_score']:.4f}")
+        # Imprimir métricas
+        self._log(f"\n📈 MÉTRICAS:")
+        self._log(f"   • Accuracy:  {metricas['accuracy']:.4f}")
+        self._log(f"   • Precision: {metricas['precision']:.4f}")
+        self._log(f"   • Recall:    {metricas['recall']:.4f}")
+        self._log(f"   • F1-Score:  {metricas['f1_score']:.4f}")
         
         if 'roc_auc' in metricas:
-            self._log(f"ROC AUC:   {metricas['roc_auc']:.4f}")
+            self._log(f"   • ROC AUC:   {metricas['roc_auc']:.4f}")
         
-        self._log("\n📊 Matriz de Confusão:")
-        self._log(f"{metricas['confusion_matrix']}")
+        # Matriz de confusão
+        cm = metricas['confusion_matrix']
+        self._log(f"\n📊 MATRIZ DE CONFUSÃO:")
+        self._log(f"                    Predito")
+        self._log(f"              Sem Chuva | Com Chuva")
+        self._log(f"   Real Sem Chuva    {cm[0,0]:5d}  |  {cm[0,1]:5d}")
+        self._log(f"        Com Chuva    {cm[1,0]:5d}  |  {cm[1,1]:5d}")
         
-        self._log("\n📋 Relatório Detalhado:")
-        self._log(classification_report(y_true, y_pred, zero_division=0))
-        self._log("=" * 80)
+        # Relatório detalhado
+        self._log(f"\n📋 RELATÓRIO DETALHADO:")
+        self._log(classification_report(y_true, y_pred, zero_division=0, 
+                                       target_names=['Sem Chuva', 'Com Chuva']))
+        self._log("="*80)
         
         self.metricas['classificacao'] = metricas
         return metricas
@@ -300,7 +386,9 @@ class ModelEvaluator:
         """
         from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
         
-        self._log("📊 Avaliando modelo de regressão...")
+        self._log("\n" + "="*80)
+        self._log("📊 AVALIAÇÃO DO MODELO DE REGRESSÃO")
+        self._log("="*80)
         
         metricas = {
             'rmse': np.sqrt(mean_squared_error(y_true, y_pred)),
@@ -308,14 +396,11 @@ class ModelEvaluator:
             'r2': r2_score(y_true, y_pred)
         }
         
-        # Imprimir relatório
-        self._log("\n" + "=" * 80)
-        self._log("📈 MÉTRICAS DE REGRESSÃO")
-        self._log("=" * 80)
-        self._log(f"RMSE (Root Mean Squared Error): {metricas['rmse']:.4f}")
-        self._log(f"MAE (Mean Absolute Error):      {metricas['mae']:.4f}")
-        self._log(f"R² Score:                       {metricas['r2']:.4f}")
-        self._log("=" * 80)
+        self._log(f"\n📈 MÉTRICAS:")
+        self._log(f"   • RMSE (Root Mean Squared Error): {metricas['rmse']:.4f}")
+        self._log(f"   • MAE (Mean Absolute Error):      {metricas['mae']:.4f}")
+        self._log(f"   • R² Score:                       {metricas['r2']:.4f}")
+        self._log("="*80)
         
         self.metricas['regressao'] = metricas
         return metricas
@@ -328,13 +413,15 @@ class ModelEvaluator:
         import seaborn as sns
         from sklearn.metrics import confusion_matrix, roc_curve, auc
         
-        self._log("📊 Gerando gráficos de avaliação...")
+        self._log("\n📊 Gerando gráficos de avaliação...")
         
         fig, axes = plt.subplots(1, 2, figsize=(15, 5))
         
         # Matriz de confusão
         cm = confusion_matrix(y_true, y_pred)
-        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=axes[0])
+        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', ax=axes[0],
+                   xticklabels=['Sem Chuva', 'Com Chuva'],
+                   yticklabels=['Sem Chuva', 'Com Chuva'])
         axes[0].set_title('Matriz de Confusão', fontsize=14, fontweight='bold')
         axes[0].set_xlabel('Previsão')
         axes[0].set_ylabel('Real')
@@ -358,8 +445,7 @@ class ModelEvaluator:
         plt.tight_layout()
         
         if salvar:
-            caminho = Path('../data/plots/avaliacao_classificacao.png')
-            caminho.parent.mkdir(parents=True, exist_ok=True)
+            caminho = self.plots_dir / 'avaliacao_classificacao.png'
             plt.savefig(caminho, dpi=300, bbox_inches='tight')
             self._log(f"   ✅ Gráfico salvo em: {caminho}")
         
@@ -389,14 +475,21 @@ def testar_modelo_em_dados_novos(caminho_dados: str,
     Returns:
         DataFrame com previsões
     """
-    print("=" * 80)
-    print("🧪 TESTANDO MODELOS EM DADOS NOVOS")
-    print("=" * 80)
+    print("\n" + "="*80)
+    print("🧪 TESTE DE MODELOS EM DADOS NOVOS")
+    print("="*80)
+    print(f"⏰ Início: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print("="*80)
     
     # Carregar dados
-    print(f"📂 Carregando dados de teste: {caminho_dados}")
+    print(f"\n📂 Carregando dados de teste: {caminho_dados}")
+    
+    if not Path(caminho_dados).exists():
+        print(f"❌ ERRO: Arquivo não encontrado: {caminho_dados}")
+        return None
+    
     df = pd.read_csv(caminho_dados)
-    print(f"✅ Dados carregados: {len(df)} registros")
+    print(f"✅ Dados carregados: {len(df)} registros × {len(df.columns)} colunas")
     
     # Inicializar preditor
     predictor = WeatherPredictor(
@@ -427,21 +520,36 @@ def testar_modelo_em_dados_novos(caminho_dados: str,
         
         # Avaliar regressão (se disponível)
         if col_target_reg and col_target_reg in df.columns and predictor.modelo_regressao:
-            predicoes_reg = predictor.prever_regressao(df)
-            evaluator.avaliar_regressao(
-                y_true=df[col_target_reg],
-                y_pred=predicoes_reg
-            )
+            # Verificar se há valores válidos no target
+            target_valido = df[col_target_reg].notna()
+            n_validos = target_valido.sum()
+            
+            if n_validos == 0:
+                print(f"\n⚠️ Avaliação de regressão ignorada: Coluna '{col_target_reg}' está completamente vazia")
+            else:
+                print(f"\n📊 Avaliando regressão com {n_validos} registros válidos ({n_validos/len(df)*100:.1f}%)")
+                
+                # Filtrar apenas registros com target válido
+                df_valido = df[target_valido].copy()
+                
+                predicoes_reg = predictor.prever_regressao(df_valido)
+                evaluator.avaliar_regressao(
+                    y_true=df_valido[col_target_reg],
+                    y_pred=predicoes_reg
+                )
     
     # Salvar previsões
     if salvar_predicoes:
-        caminho_saida = Path('../data/predicoes.csv')
+        project_root = Path(__file__).resolve().parent.parent.parent
+        caminho_saida = project_root / 'data' / 'predicoes.csv'
         df_resultado.to_csv(caminho_saida, index=False)
         print(f"\n💾 Previsões salvas em: {caminho_saida}")
     
-    print("\n" + "=" * 80)
+    print("\n" + "="*80)
     print("✅ TESTE CONCLUÍDO COM SUCESSO")
-    print("=" * 80)
+    print("="*80)
+    print(f"⏰ Término: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print("="*80 + "\n")
     
     return df_resultado
 
@@ -460,9 +568,9 @@ def prever_com_dados_manuais(dados_manuais: Dict[str, float],
     Returns:
         Dicionário com previsões
     """
-    print("=" * 80)
-    print("🎯 FAZENDO PREVISÃO COM DADOS MANUAIS")
-    print("=" * 80)
+    print("\n" + "="*80)
+    print("🎯 PREVISÃO COM DADOS MANUAIS")
+    print("="*80)
     
     # Criar DataFrame
     df = pd.DataFrame([dados_manuais])
@@ -487,18 +595,20 @@ def prever_com_dados_manuais(dados_manuais: Dict[str, float],
         resultado['quantidade_prevista_mm'] = float(pred_reg[0])
     
     # Exibir resultado
-    print("\n" + "=" * 80)
+    print("\n" + "="*80)
     print("🎯 RESULTADO DA PREVISÃO")
-    print("=" * 80)
+    print("="*80)
     
     if 'vai_chover' in resultado:
-        print(f"🌧️  Vai chover? {'SIM' if resultado['vai_chover'] else 'NÃO'}")
+        emoji = "🌧️" if resultado['vai_chover'] else "☀️"
+        resposta = "SIM" if resultado['vai_chover'] else "NÃO"
+        print(f"{emoji}  Vai chover? {resposta}")
         print(f"📊 Probabilidade: {resultado['probabilidade_chuva']*100:.1f}%")
     
     if 'quantidade_prevista_mm' in resultado:
         print(f"💧 Quantidade prevista: {resultado['quantidade_prevista_mm']:.2f} mm")
     
-    print("=" * 80)
+    print("="*80 + "\n")
     
     return resultado
 
@@ -507,11 +617,13 @@ if __name__ == '__main__':
     """
     Exemplo de uso do módulo
     """
-    print("Módulo de previsão carregado com sucesso!")
+    print("="*80)
+    print("MÓDULO DE PREVISÃO - PI4 Machine Learning")
+    print("="*80)
     print("\n📚 Exemplos de uso:")
     print("""
 # 1. Testar modelo em dados novos
-from src.predict import testar_modelo_em_dados_novos
+from src.utils.predict import testar_modelo_em_dados_novos
 
 testar_modelo_em_dados_novos(
     caminho_dados='data/dados_processados_ml.csv',
@@ -524,38 +636,48 @@ testar_modelo_em_dados_novos(
 )
 
 # 2. Fazer previsão com dados manuais
-from src.predict import prever_com_dados_manuais
+from src.utils.predict import prever_com_dados_manuais
 
 dados = {
     'TEMPERATURA DO AR - BULBO SECO, HORARIA (°C)': 25.5,
     'UMIDADE RELATIVA DO AR, HORARIA (%)': 80,
-    'PRESSAO ATMOSFERICA AO NIVEL DA ESTACAO, HORARIA (mB)': 1013.2,
-    'VENTO, VELOCIDADE HORARIA (m/s)': 3.5,
     'hora': 14,
-    'mes': 10,
-    'dia_semana': 3
+    'mes': 10
 }
 
 resultado = prever_com_dados_manuais(
     dados_manuais=dados,
-    caminho_modelo_class='data/models/modelo_classificacao.joblib',
-    caminho_modelo_reg='data/models/modelo_regressao.joblib'
+    caminho_modelo_class='data/models/modelo_classificacao.joblib'
 )
     """)
     
-    # Teste rápido (se modelos existirem)
-    from pathlib import Path
-    
-    caminho_modelo = Path(__file__).parent.parent / 'data' / 'models' / 'modelo_classificacao.joblib'
-    caminho_dados = Path(__file__).parent.parent / 'data' / 'dados_processados_ml.csv'
+    # Teste automático (se modelos existirem)
+    project_root = Path(__file__).resolve().parent.parent.parent
+    caminho_modelo = project_root / 'data' / 'models' / 'modelo_classificacao.joblib'
+    caminho_dados = project_root / 'data' / 'dados_processados_ml.csv'
     
     if caminho_modelo.exists() and caminho_dados.exists():
-        print("\n🧪 Executando teste rápido...")
+        print("\n✅ Modelos e dados encontrados!")
+        print(f"📁 Modelo: {caminho_modelo}")
+        print(f"📁 Dados: {caminho_dados}")
+        print("\n🧪 Executando teste automático...\n")
+        
         testar_modelo_em_dados_novos(
             caminho_dados=str(caminho_dados),
             caminho_modelo_class=str(caminho_modelo),
+            caminho_modelo_reg=str(project_root / 'data' / 'models' / 'modelo_regressao.joblib'),
             col_target_class='Chuva',
+            col_target_reg='PRECIPITAÇÃO TOTAL, HORÁRIO (mm)',
             avaliar=True
         )
     else:
-        print("\n⚠️ Modelos ou dados não encontrados. Execute primeiro o treinamento!")
+        print("\n⚠️ Modelos ou dados não encontrados!")
+        if not caminho_modelo.exists():
+            print(f"   • Modelo ausente: {caminho_modelo}")
+        if not caminho_dados.exists():
+            print(f"   • Dados ausentes: {caminho_dados}")
+        print("\n📋 Execute primeiro:")
+        print("   1. python src/train.py  (treinar modelos)")
+        print("   2. python src/utils/predict.py  (fazer previsões)")
+    
+    print("\n" + "="*80)

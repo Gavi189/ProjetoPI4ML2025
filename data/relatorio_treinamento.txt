@@ -1,0 +1,64 @@
+================================================================================
+RELATÓRIO DE TREINAMENTO DE MODELOS
+Data: 2025-10-23 19:10:41
+================================================================================
+
+MODELO DE CLASSIFICAÇÃO
+----------------------------------------
+Acurácia:  0.8287
+Precisão:  0.2758
+Recall:    0.6730
+F1-Score:  0.3912
+
+Validação Cruzada:
+  Média: 0.4256
+  Desvio Padrão: 0.0121
+  Scores: [0.41354293 0.42307692 0.44779874 0.41656211 0.42690815]
+
+MODELO DE REGRESSÃO
+----------------------------------------
+R² Score: 0.1635
+RMSE:     0.3866
+MAE:      0.1144
+
+FEATURES UTILIZADAS
+----------------------------------------
+Total: 37
+
+  1. Hora UTC
+  2. PRESSAO ATMOSFERICA AO NIVEL DA ESTACAO, HORARIA (mB)
+  3. PRESSÃO ATMOSFERICA MAX.NA HORA ANT. (AUT) (mB)
+  4. PRESSÃO ATMOSFERICA MIN. NA HORA ANT. (AUT) (mB)
+  5. RADIACAO GLOBAL (Kj/m²)
+  6. TEMPERATURA DO AR - BULBO SECO, HORARIA (°C)
+  7. TEMPERATURA DO PONTO DE ORVALHO (°C)
+  8. TEMPERATURA MÁXIMA NA HORA ANT. (AUT) (°C)
+  9. TEMPERATURA MÍNIMA NA HORA ANT. (AUT) (°C)
+ 10. TEMPERATURA ORVALHO MAX. NA HORA ANT. (AUT) (°C)
+ 11. TEMPERATURA ORVALHO MIN. NA HORA ANT. (AUT) (°C)
+ 12. UMIDADE REL. MAX. NA HORA ANT. (AUT) (%)
+ 13. UMIDADE REL. MIN. NA HORA ANT. (AUT) (%)
+ 14. UMIDADE RELATIVA DO AR, HORARIA (%)
+ 15. VENTO, DIREÇÃO HORARIA (gr) (° (gr))
+ 16. VENTO, RAJADA MAXIMA (m/s)
+ 17. VENTO, VELOCIDADE HORARIA (m/s)
+ 18. Unnamed: 19
+ 19. ano
+ 20. mes
+ 21. dia
+ 22. hora
+ 23. dia_semana
+ 24. dia_ano
+ 25. semana_ano
+ 26. hora_sin
+ 27. hora_cos
+ 28. mes_sin
+ 29. mes_cos
+ 30. estacao
+ 31. periodo_dia
+ 32. fim_semana
+ 33. amplitude_termica
+ 34. spread_temp_orvalho
+ 35. variacao_umidade
+ 36. indice_desconforto
+ 37. radiacao_norm
