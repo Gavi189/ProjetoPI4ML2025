@@ -1,8 +1,267 @@
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.venv/
-.ipynb_checkpoints/
-data/*.csv
-data/*.xlsx
+# # ============================================================================
+# # .gitignore - Arquivos a serem ignorados pelo Git
+# # ============================================================================
+
+# # Python
+ __pycache__/
+# *.py[cod]
+# *$py.class
+# *.so
+# .Python
+# build/
+# develop-eggs/
+# dist/
+# downloads/
+# eggs/
+# .eggs/
+# lib/
+# lib64/
+# parts/
+# sdist/
+# var/
+# wheels/
+# *.egg-info/
+# .installed.cfg
+# *.egg
+
+# # Virtual Environment
+ venv/
+# ENV/
+# env/
+.venv
+
+# # IDEs
+# .vscode/
+# .idea/
+# *.swp
+# *.swo
+# *~
+# .DS_Store
+
+# # Jupyter Notebook
+# .ipynb_checkpoints
+# *.ipynb_checkpoints/
+
+# # Logs
+# logs/
+# *.log
+
+# # Dados sensíveis (remova se quiser versionar)
+# data/raw/*.csv
+# data/processed/*.csv
+# !data/processed/dados_processados_ml.csv  # Exceção
+
+# # Modelos grandes (use Git LFS se necessário)
+# *.h5
+# *.pkl
+# # *.joblib  # Descomente se modelos forem muito grandes
+
+# # Streamlit
+# .streamlit/secrets.toml
+
+# # Ambiente
+# .env
+# .env.local
+
+# # Temporários
+# *.tmp
+# temp/
+# tmp/
+
+# # OS
+# Thumbs.db
+# .DS_Store
+
+# # Pytest
+# .pytest_cache/
+# .coverage
+# htmlcov/
+
+# # MyPy
+# .mypy_cache/
+# .dmypy.json
+# dmypy.json
+
+
+# # ============================================================================
+# # Procfile - Para deploy no Heroku
+# # ============================================================================
+
+# web: sh setup_heroku.sh && streamlit run app.py --server.port=$PORT --server.address=0.0.0.0
+
+
+# # ============================================================================
+# # setup_heroku.sh - Script de setup para Heroku
+# # Crie este arquivo para configurar o Heroku
+# # ============================================================================
+
+# #!/bin/bash
+
+# mkdir -p ~/.streamlit/
+
+# echo "\
+# [general]\n\
+# email = \"seu-email@example.com\"\n\
+# " > ~/.streamlit/credentials.toml
+
+# echo "\
+# [server]\n\
+# headless = true\n\
+# enableCORS=false\n\
+# port = $PORT\n\
+# " > ~/.streamlit/config.toml
+
+
+# # ============================================================================
+# # runtime.txt - Versão do Python para Heroku
+# # ============================================================================
+
+# python-3.11.7
+
+
+# # ============================================================================
+# # packages.txt - Pacotes do sistema (se necessário)
+# # Para Streamlit Cloud
+# # ============================================================================
+
+# # Adicione aqui pacotes do sistema necessários
+# # Exemplo:
+# # libgomp1
+
+
+# # ============================================================================
+# # .dockerignore - Para deploy com Docker (opcional)
+# # ============================================================================
+
+# __pycache__
+# *.pyc
+# *.pyo
+# *.pyd
+# .Python
+# pip-log.txt
+# pip-delete-this-directory.txt
+# .tox
+# .coverage
+# .coverage.*
+# .cache
+# nosetests.xml
+# coverage.xml
+# *.log
+# .git
+# .mypy_cache
+# .pytest_cache
+# .hypothesis
+# venv/
+# ENV/
+# env/
+# .venv
+
+
+# # ============================================================================
+# # Dockerfile - Para deploy com Docker (opcional)
+# # ============================================================================
+
+# FROM python:3.11-slim
+
+# WORKDIR /app
+
+# # Copiar requirements
+# COPY requirements.txt .
+
+# # Instalar dependências
+# RUN pip install --no-cache-dir -r requirements.txt
+
+# # Copiar aplicação
+# COPY . .
+
+# # Expor porta
+# EXPOSE 8501
+
+# # Healthcheck
+# HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health
+
+# # Comando de execução
+# ENTRYPOINT ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+
+
+# # ============================================================================
+# # docker-compose.yml - Para desenvolvimento com Docker
+# # ============================================================================
+
+# version: '3.8'
+
+# services:
+#   streamlit:
+#     build: .
+#     ports:
+#       - "8501:8501"
+#     volumes:
+#       - ./data:/app/data
+#       - ./logs:/app/logs
+#     environment:
+#       - STREAMLIT_SERVER_PORT=8501
+#       - STREAMLIT_SERVER_ADDRESS=0.0.0.0
+#     restart: unless-stopped
+
+
+# # ============================================================================
+# # .env.example - Exemplo de variáveis de ambiente
+# # Copie para .env e configure suas variáveis
+# # ============================================================================
+
+# # API Keys (se usar)
+# # API_KEY=sua_chave_aqui
+
+# # Database (se usar)
+# # DB_HOST=localhost
+# # DB_PORT=5432
+# # DB_NAME=weather_db
+# # DB_USER=postgres
+# # DB_PASSWORD=sua_senha
+
+# # Configurações da aplicação
+# # DEBUG=False
+# # LOG_LEVEL=INFO
+
+
+# # ============================================================================
+# # Makefile - Comandos úteis (Linux/Mac)
+# # ============================================================================
+
+# .PHONY: install run test clean deploy
+
+# install:
+# 	python3 -m venv venv
+# 	. venv/bin/activate && pip install -r requirements.txt
+
+# run:
+# 	. venv/bin/activate && streamlit run app.py
+
+# test:
+# 	. venv/bin/activate && pytest tests/
+
+# clean:
+# 	find . -type d -name "__pycache__" -exec rm -rf {} +
+# 	find . -type f -name "*.pyc" -delete
+# 	rm -rf .pytest_cache
+# 	rm -rf .coverage
+# 	rm -rf htmlcov
+
+# deploy-streamlit:
+# 	git add .
+# 	git commit -m "Deploy to Streamlit Cloud"
+# 	git push origin main
+
+# deploy-heroku:
+# 	git add .
+# 	git commit -m "Deploy to Heroku"
+# 	git push heroku main
+
+# help:
+# 	@echo "Comandos disponíveis:"
+# 	@echo "  make install          - Instala dependências"
+# 	@echo "  make run             - Executa aplicação"
+# 	@echo "  make test            - Executa testes"
+# 	@echo "  make clean           - Limpa arquivos temporários"
+# 	@echo "  make deploy-streamlit - Deploy no Streamlit Cloud"
+# 	@echo "  make deploy-heroku   - Deploy no Heroku"
