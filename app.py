@@ -25,13 +25,13 @@ st.set_page_config(
 
 # Adicionar src ao path
 project_root = Path(__file__).parent
-sys.path.append(str(project_root / 'src' / 'utils'))
+sys.path.append(str(project_root / 'src' ))
 
 # Imports dos módulos customizados
 try:
-    from preprocess import WeatherPreprocessor
+    from utils.preprocess import WeatherPreprocessor
     from utils.train import WeatherModelTrainer
-    from predict import WeatherPredictor
+    from utils.predict import WeatherPredictor
     MODULOS_DISPONIVEIS = True
 except ImportError as e:
     st.error(f"⚠️ Erro ao importar módulos: {e}")
