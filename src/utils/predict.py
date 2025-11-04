@@ -35,7 +35,7 @@ class WeatherPredictor:
         self.features_esperadas = None
         
         # Obter diretórios do projeto
-        self.project_root = Path(__file__).resolve().parent.parent.parent
+        self.project_root = Path(__file__).resolve().parent.parent
         self.models_dir = self.project_root / 'data' / 'models'
         self.plots_dir = self.project_root / 'data' / 'plots'
         
@@ -302,7 +302,7 @@ class ModelEvaluator:
         self.metricas = {}
         
         # Obter diretórios do projeto
-        self.project_root = Path(__file__).resolve().parent.parent.parent
+        self.project_root = Path(__file__).resolve().parent.parent
         self.plots_dir = self.project_root / 'data' / 'plots'
         self.plots_dir.mkdir(parents=True, exist_ok=True)
     
@@ -540,7 +540,7 @@ def testar_modelo_em_dados_novos(caminho_dados: str,
     
     # Salvar previsões
     if salvar_predicoes:
-        project_root = Path(__file__).resolve().parent.parent.parent
+        project_root = Path(__file__).resolve().parent.parent
         caminho_saida = project_root / 'data' / 'predicoes.csv'
         df_resultado.to_csv(caminho_saida, index=False)
         print(f"\n💾 Previsões salvas em: {caminho_saida}")
@@ -652,9 +652,9 @@ resultado = prever_com_dados_manuais(
     """)
     
     # Teste automático (se modelos existirem)
-    project_root = Path(__file__).resolve().parent.parent.parent
-    caminho_modelo = project_root / 'src' / 'data' / 'models' / 'modelo_classificacao.joblib'
-    caminho_dados = project_root / 'src' / 'data' / 'dados_processados_ml.csv'
+    project_root = Path(__file__).resolve().parent.parent
+    caminho_modelo = project_root / 'data' / 'models' / 'modelo_classificacao.joblib'
+    caminho_dados = project_root /  'data' / 'dados_processados_ml.csv'
     
     if caminho_modelo.exists() and caminho_dados.exists():
         print("\n✅ Modelos e dados encontrados!")
@@ -665,7 +665,7 @@ resultado = prever_com_dados_manuais(
         testar_modelo_em_dados_novos(
             caminho_dados=str(caminho_dados),
             caminho_modelo_class=str(caminho_modelo),
-            caminho_modelo_reg=str(project_root / 'src' / 'data' / 'models' / 'modelo_regressao.joblib'),
+            caminho_modelo_reg=str(project_root  / 'data' / 'models' / 'modelo_regressao.joblib'),
             col_target_class='Chuva',
             col_target_reg='PRECIPITAÇÃO TOTAL, HORÁRIO (mm)',
             avaliar=True
