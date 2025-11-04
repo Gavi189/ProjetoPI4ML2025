@@ -24,13 +24,13 @@ st.set_page_config(
 )
 
 # Adicionar src ao path
-project_root = Path(__file__).parent
-sys.path.append(str(project_root / 'src' ))
+project_root = Path(__file__).resolve().parent
+sys.path.append(str(project_root / "src"))
 
 # Imports dos módulos customizados
 try:
-    from utils.preprocess import WeatherPreprocessor
     from utils.train import WeatherModelTrainer
+    from utils.preprocess import WeatherPreprocessor
     from utils.predict import WeatherPredictor
     MODULOS_DISPONIVEIS = True
 except ImportError as e:
@@ -197,7 +197,7 @@ if pagina == "🏠 Home":
     col1, col2, col3 = st.columns(3)
     
     # Verificar dados
-    data_dir = project_root / 'data'
+    data_dir = project_root / 'src' / 'data'
     dados_processados = data_dir / 'dados_processados_ml.csv'
     
     with col1:
@@ -207,7 +207,7 @@ if pagina == "🏠 Home":
             st.error("❌ Dados não encontrados")
     
     # Verificar modelos
-    modelo_class = data_dir / 'models' / 'modelo_classificacao.joblib'
+    modelo_class = data_dir /  'models' / 'modelo_classificacao.joblib'
     modelo_reg = data_dir / 'models' / 'modelo_regressao.joblib'
     
     with col2:
@@ -394,7 +394,7 @@ elif pagina == "🤖 Treinar Modelo":
     """)
     
     # Verificar se há dados
-    data_dir = project_root / 'data'
+    data_dir = project_root / 'src' / 'data'
     dados_processados = data_dir / 'dados_processados_ml.csv'
     
     if not dados_processados.exists():
@@ -542,7 +542,7 @@ elif pagina == "🔮 Fazer Previsão":
     st.markdown("Faça previsões meteorológicas usando os modelos treinados.")
     
     # Verificar modelos
-    data_dir = project_root / 'data'
+    data_dir = project_root / 'src' / 'data'
     modelo_class_path = data_dir / 'models' / 'modelo_classificacao.joblib'
     modelo_reg_path = data_dir / 'models' / 'modelo_regressao.joblib'
     
@@ -733,7 +733,7 @@ elif pagina == "📈 Análise de Resultados":
     st.markdown("Visualize métricas e análises detalhadas dos modelos treinados.")
     
     # Verificar se há modelos salvos
-    data_dir = project_root / 'data'
+    data_dir = project_root / 'src' / 'data'
     modelo_class_path = data_dir / 'models' / 'modelo_classificacao.joblib'
     modelo_reg_path = data_dir / 'models' / 'modelo_regressao.joblib'
     
@@ -788,6 +788,11 @@ elif pagina == "📈 Análise de Resultados":
                             )
                             
                             # Fazer previsões
+                            # Remover coluna target se existir
+                            if 'PRECIPITAÇÃO TOTAL, HORÁRIO (mm)' in X_test.columns:
+                                X_test = X_test.drop(columns=['PRECIPITAÇÃO TOTAL, HORÁRIO (mm)'])
+
+                            # Fazer previsão
                             y_pred = modelo_class.predict(X_test)
                             y_proba = modelo_class.predict_proba(X_test)[:, 1]
                             
@@ -878,28 +883,6 @@ elif pagina == "📈 Análise de Resultados":
                             report = classification_report(y_test, y_pred, output_dict=True)
                             df_report = pd.DataFrame(report).transpose()
                             st.dataframe(df_report.style.highlight_max(axis=0), use_container_width=True)
-                            
-                            # Feature Importance (se disponível)
-                            if hasattr(modelo_class, 'feature_importances_'):
-                                st.markdown("### 🔍 Importância das Features")
-                                
-                                importances = modelo_class.feature_importances_
-                                feature_names = X.columns
-                                
-                                df_importance = pd.DataFrame({
-                                    'Feature': feature_names,
-                                    'Importance': importances
-                                }).sort_values('Importance', ascending=False).head(15)
-                                
-                                fig = px.bar(
-                                    df_importance,
-                                    x='Importance',
-                                    y='Feature',
-                                    orientation='h',
-                                    title='Top 15 Features Mais Importantes'
-                                )
-                                
-                                st.plotly_chart(fig, use_container_width=True)
                         
                         else:
                             st.warning("⚠️ Módulos de análise não disponíveis")
