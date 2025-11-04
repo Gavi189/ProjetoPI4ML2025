@@ -3,7 +3,7 @@
 # # ============================================================================
 
 # # Python
- __pycache__/
+# __pycache__/
 # *.py[cod]
 # *$py.class
 # *.so
@@ -25,10 +25,10 @@
 # *.egg
 
 # # Virtual Environment
- venv/
+# venv/
 # ENV/
 # env/
-.venv
+#.venv
 
 # # IDEs
 # .vscode/
@@ -47,14 +47,14 @@
 # *.log
 
 # # Dados sensíveis (remova se quiser versionar)
-# data/raw/*.csv
-# data/processed/*.csv
+data/raw/*.csv
+data/processed/*.csv
 # !data/processed/dados_processados_ml.csv  # Exceção
 
 # # Modelos grandes (use Git LFS se necessário)
 # *.h5
 # *.pkl
-# # *.joblib  # Descomente se modelos forem muito grandes
+*.joblib  # Descomente se modelos forem muito grandes
 
 # # Streamlit
 # .streamlit/secrets.toml
