@@ -653,8 +653,8 @@ resultado = prever_com_dados_manuais(
     
     # Teste automático (se modelos existirem)
     project_root = Path(__file__).resolve().parent.parent.parent
-    caminho_modelo = project_root / 'data' / 'models' / 'modelo_classificacao.joblib'
-    caminho_dados = project_root / 'data' / 'dados_processados_ml.csv'
+    caminho_modelo = project_root / 'src' / 'data' / 'models' / 'modelo_classificacao.joblib'
+    caminho_dados = project_root / 'src' / 'data' / 'dados_processados_ml.csv'
     
     if caminho_modelo.exists() and caminho_dados.exists():
         print("\n✅ Modelos e dados encontrados!")
@@ -665,7 +665,7 @@ resultado = prever_com_dados_manuais(
         testar_modelo_em_dados_novos(
             caminho_dados=str(caminho_dados),
             caminho_modelo_class=str(caminho_modelo),
-            caminho_modelo_reg=str(project_root / 'data' / 'models' / 'modelo_regressao.joblib'),
+            caminho_modelo_reg=str(project_root / 'src' / 'data' / 'models' / 'modelo_regressao.joblib'),
             col_target_class='Chuva',
             col_target_reg='PRECIPITAÇÃO TOTAL, HORÁRIO (mm)',
             avaliar=True
