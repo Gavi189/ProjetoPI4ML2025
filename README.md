@@ -8,7 +8,7 @@ Sistema completo de previsão meteorológica usando Machine Learning, desenvolvi
 
 ## 📸 Screenshots
 
-[![alt text](image-2.png)]
+![alt text](image-2.png)
 
 ## 🎯 Funcionalidades
 
