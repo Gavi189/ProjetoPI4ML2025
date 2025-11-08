@@ -1,5 +1,5 @@
 """
-Interface Gráfica para Sistema de Previsão Meteorológica
+Interface Gráfica para Sistema de Previsão Meteorológica (ClimaPrev)
 Autor: PI4-MachineLearning-2025
 Framework: Streamlit
 """
@@ -147,7 +147,7 @@ pagina = st.sidebar.radio(
 st.sidebar.markdown("---")
 st.sidebar.info("""
 **PI4 Machine Learning 2025**  
-Sistema de Previsão Meteorológica  
+Sistema de Previsão Meteorológica (ClimaPrev) 
 Desenvolvido com Streamlit
 """)
 
@@ -155,10 +155,10 @@ Desenvolvido com Streamlit
 # PÁGINA: HOME
 # ============================================================================
 if pagina == "🏠 Home":
-    st.markdown('<h1 class="main-header">🌦️ Sistema de Previsão Meteorológica</h1>', unsafe_allow_html=True)
+    st.markdown('<h1 class="main-header">🌦️ ClimaPrev</h1>', unsafe_allow_html=True)
     
     st.markdown("""
-    ## Bem-vindo ao Sistema de Previsão Meteorológica! 
+    ## Bem-vindo ao ClimaPrev! 
     
     Este sistema utiliza **Machine Learning** para prever:
     - ☔ **Classificação:** Vai chover ou não?
@@ -1025,8 +1025,14 @@ elif pagina == "📈 Análise de Resultados":
 st.markdown("---")
 st.markdown("""
 <div style='text-align: center; color: gray; padding: 2rem;'>
-    <p><strong>Sistema de Previsão Meteorológica</strong></p>
+    <p><strong>Sistema de Previsão Meteorológica (ClimaPrev)</strong></p>
     <p>Desenvolvido com ❤️ usando Streamlit | PI4 Machine Learning 2025</p>
-    <p>📧 Contato: seu-email@example.com | 🔗 GitHub: github.com/seu-usuario</p>
+            <p>🔗 GitHub: https://github.com/Gavi189/ProjetoPI4ML2025</p>
+    <p>📧 Contato:<br><a href="mailto:2211273@aluno.univesp.br">Gabriel Kaique de Areal Rodrigues</a><br>
+            <a href="mailto:2215969@aluno.univesp.br">Gabriel Valério Andrade Rodrigues</a><br>
+            <a href="mailto:2215890@aluno.univesp.br">Grace Kelly Coracin</a><br>
+            <a href="mailto:2229846@aluno.univesp.br">Leandro Junior Gaspar de Oliveira</a><br>
+            <a href="mailto:2219233@aluno.univesp.br">Simone Pereira do Nascimento</a><br>
+    </p>
 </div>
 """, unsafe_allow_html=True)

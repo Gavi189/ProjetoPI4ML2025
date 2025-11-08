@@ -8,7 +8,7 @@ Sistema completo de previsão meteorológica usando Machine Learning, desenvolvi
 
 ## 📸 Screenshots
 
-[Adicione aqui screenshots da sua aplicação]
+[![alt text](image-2.png)]
 
 ## 🎯 Funcionalidades
 
@@ -214,6 +214,34 @@ git commit -m "feat: adiciona nova funcionalidade"
 git push origin feature/nova-funcionalidade
 ```
 
+### Como Debugar
+
+1. **No Visual Studio Code**: Na barra lateral clique em "Run and Debug"![alt text](image.png)
+2. ** **: create a launch.json file, depois Python debugger, e então Python File, criando um launch.json
+3. ** **: apague o conteudo gerado automaticamente no launch.json e cole o trecho a seguir e salve o arquivo
+
+```
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python:Streamlit",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "streamlit",
+            "args": [
+                "run",
+                "${file}",
+                "--server.port",
+                "2000"
+            ]
+        }
+    ]
+}
+
+```
+4. ** **: abra o arquivo app.py, adicione seus breakpoints e clique em Start Debugging ![alt text](image-1.png)
+
 ### Adicionar Novas Features
 
 1. **Novos Modelos**: Adicione em `src/utils/train.py`
@@ -275,8 +303,14 @@ Este projeto está sob a licença MIT. Ver `LICENSE` para mais detalhes.
 
 **PI4-MachineLearning-2025**
 
-- GitHub: [@seu-usuario](https://github.com/seu-usuario)
-- Email: seu-email@example.com
+- GitHub:[@Gavi189](https://github.com/Gavi189)
+         [@gabrielkaique2](https://github.com/gabrielkaique2)
+         [@simone2013](https://github.com/simone2013)
+- Email: 2211273@aluno.univesp.br - Gabriel Kaique de Areal Rodrigues
+         2215969@aluno.univesp.br - Gabriel Valério Andrade Rodrigues
+         2215890@aluno.univesp.br - Grace Kelly Coracin
+         2229846@aluno.univesp.br - Leandro Junior Gaspar de Oliveira
+         2219233@aluno.univesp.br - Simone Pereira do Nascimento
 
 ## 🙏 Agradecimentos
 
@@ -290,8 +324,11 @@ Encontrou um bug? Tem uma sugestão?
 
 - 🐛 [Abra uma Issue](https://github.com/seu-usuario/weather-prediction/issues)
 - 💬 [Discussões](https://github.com/seu-usuario/weather-prediction/discussions)
-- 📧 Email: seu-email@example.com
-
+- 📧 Email: 2211273@aluno.univesp.br - Gabriel Kaique de Areal Rodrigues
+        2215969@aluno.univesp.br - Gabriel Valério Andrade Rodrigues
+        2215890@aluno.univesp.br - Grace Kelly Coracin
+        2229846@aluno.univesp.br - Leandro Junior Gaspar de Oliveira
+        2219233@aluno.univesp.br - Simone Pereira do Nascimento
 ---
 
 <div align="center">
