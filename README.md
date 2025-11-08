@@ -241,7 +241,7 @@ git push origin feature/nova-funcionalidade
 }
 
 ```
-4. ** **: abra o arquivo app.py, adicione seus breakpoints e clique em Start Debugging 
+4. **Visual Studio Code > app.py**: abra o arquivo app.py, adicione seus breakpoints e clique em Start Debugging 
 ![alt text](image-1.png)
 
 ### Adicionar Novas Features
