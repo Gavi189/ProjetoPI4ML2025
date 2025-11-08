@@ -216,9 +216,10 @@ git push origin feature/nova-funcionalidade
 
 ### Como Debugar
 
-1. **No Visual Studio Code**: Na barra lateral clique em "Run and Debug"![alt text](image.png)
-2. ** **: create a launch.json file, depois Python debugger, e então Python File, criando um launch.json
-3. ** **: apague o conteudo gerado automaticamente no launch.json e cole o trecho a seguir e salve o arquivo
+1. **Visual Studio Code**: Na barra lateral clique em "Run and Debug"
+![alt text](image.png)
+2. **Visual Studio Code > Run and Debug**: create a launch.json file, depois Python debugger, e então Python File, criando um launch.json
+3. **Visual Studio Code > launch.json**: apague o conteudo gerado automaticamente no launch.json e cole o trecho a seguir e salve o arquivo
 
 ```
 {
@@ -240,7 +241,8 @@ git push origin feature/nova-funcionalidade
 }
 
 ```
-4. ** **: abra o arquivo app.py, adicione seus breakpoints e clique em Start Debugging ![alt text](image-1.png)
+4. ** **: abra o arquivo app.py, adicione seus breakpoints e clique em Start Debugging 
+![alt text](image-1.png)
 
 ### Adicionar Novas Features
 
