@@ -32,6 +32,7 @@ try:
     from utils.train import WeatherModelTrainer
     from utils.preprocess import WeatherPreprocessor
     from utils.predict import WeatherPredictor
+    from utils.feature_calculator import FeatureCalculator
     MODULOS_DISPONIVEIS = True
 except ImportError as e:
     st.error(f"⚠️ Erro ao importar módulos: {e}")
@@ -579,21 +580,34 @@ elif pagina == "🔮 Fazer Previsão":
             with col3:
                 radiacao = st.number_input("☀️ Radiação (KJ/m²)", 0.0, 5000.0, 1000.0, 100.0)
                 vento = st.number_input("💨 Velocidade Vento (m/s)", 0.0, 30.0, 3.0, 0.5)
-            
+
+            # Slider de limiar (threshold) — exibido antes de processar a previsão
+            limiar_default = st.session_state.get('previsao_threshold', 0.5)
+            limiar = st.slider(
+                "Limiar para considerar 'vai chover'",
+                min_value=0.0,
+                max_value=1.0,
+                value=float(limiar_default),
+                step=0.01
+            )
+            # Persistir escolha na sessão
+            st.session_state['previsao_threshold'] = float(limiar)
+
             if st.button("🔮 FAZER PREVISÃO", key="prever_manual", type="primary"):
                 try:
-                    # Criar DataFrame com dados
-                    dados_input = {
-                        'TEMPERATURA DO AR - BULBO SECO, HORARIA (°C)': [temperatura],
-                        'UMIDADE RELATIVA DO AR, HORARIA (%)': [umidade],
-                        'PRESSAO ATMOSFERICA AO NIVEL DA ESTACAO, HORARIA (mB)': [pressao],
-                        'RADIACAO GLOBAL (Kj/m²)': [radiacao],
-                        'hora': [hora],
-                        'mes': [mes],
-                        'dia_semana': [dia_semana]
-                    }
+                    # Usar FeatureCalculator para criar entrada completa
+                    calculator = FeatureCalculator(verbose=False)
                     
-                    df_input = pd.DataFrame(dados_input)
+                    df_input = calculator.criar_entrada_completa(
+                        temperatura=temperatura,
+                        umidade=umidade,
+                        pressao=pressao,
+                        radiacao=radiacao,
+                        hora=hora,
+                        mes=mes,
+                        dia_semana=dia_semana,
+                        vento=vento
+                    )
                     
                     # Carregar modelos e fazer previsão
                     if modelos_disponiveis['classificacao']:
@@ -607,22 +621,27 @@ elif pagina == "🔮 Fazer Previsão":
                         st.markdown("---")
                         st.markdown("### 🎯 Resultado da Previsão")
                         
-                        vai_chover = bool(resultado['predicoes'][0])
+                        # Probabilidade retornada pelo modelo
                         prob_chuva = float(resultado['prob_com_chuva'][0])
-                        
+
+                        # Decisão final usando o limiar já selecionado acima
+                        vai_chover = prob_chuva >= limiar
+
                         col1, col2 = st.columns(2)
-                        
+
                         with col1:
                             if vai_chover:
                                 st.error("### 🌧️ VAI CHOVER")
                             else:
                                 st.success("### ☀️ NÃO VAI CHOVER")
-                        
+
                         with col2:
+                            # Mostrar probabilidade e delta relativo ao limiar atual
+                            delta_pct = (prob_chuva - limiar) * 100
                             st.metric(
                                 "Probabilidade de Chuva",
                                 f"{prob_chuva*100:.1f}%",
-                                delta=f"{(prob_chuva-0.5)*100:.1f}% vs baseline"
+                                delta=f"{delta_pct:.1f}% vs limiar ({limiar*100:.0f}%)"
                             )
                         
                         # Gauge chart
@@ -649,6 +668,81 @@ elif pagina == "🔮 Fazer Previsão":
                         ))
                         
                         st.plotly_chart(fig, use_container_width=True)
+                        
+                        # Mostrar features calculadas (debug)
+                        with st.expander("🔍 Debug: Features Calculadas"):
+                            st.write("**Entrada criada com as seguintes features:**")
+                            st.dataframe(df_input.T, use_container_width=True)
+
+                            try:
+                                # Obter vetor codificado/alinhado que será passado ao modelo
+                                X_encoded = predictor.preparar_features(df_input.copy())
+
+                                st.markdown("**Vetor codificado / alinhado (usado pelo modelo):**")
+                                st.dataframe(X_encoded.T, use_container_width=True)
+
+                                # Tentar carregar dados de treino para comparar percentis
+                                treino_path = project_root / 'src' / 'data' / 'dados_processados_ml.csv'
+                                if treino_path.exists():
+                                    df_treino = pd.read_csv(treino_path)
+
+                                    percent_rows = []
+                                    for col in X_encoded.columns:
+                                        val = float(X_encoded.iloc[0][col])
+                                        pct = None
+                                        mean = None
+                                        std = None
+                                        if col in df_treino.columns:
+                                            try:
+                                                series = pd.to_numeric(df_treino[col], errors='coerce').dropna()
+                                                if len(series) > 0:
+                                                    pct = (series <= val).mean() * 100
+                                                    mean = series.mean()
+                                                    std = series.std()
+                                            except Exception:
+                                                pct = None
+
+                                        percent_rows.append({
+                                            'feature': col,
+                                            'value': val,
+                                            'train_mean': mean,
+                                            'train_std': std,
+                                            'percentil_vs_treino_%': round(pct, 2) if pct is not None else None
+                                        })
+
+                                    df_percent = pd.DataFrame(percent_rows)
+                                    st.markdown("**Comparação com distribuição de treino:**")
+                                    st.dataframe(df_percent.set_index('feature'), use_container_width=True)
+                                else:
+                                    st.info("⚠️ Arquivo de treino não encontrado para comparação de percentis")
+
+                                # Mostrar metadados do modelo
+                                st.markdown("**Metadados do modelo:**")
+                                meta_info = {}
+                                meta_info['features_esperadas'] = predictor.features_esperadas if hasattr(predictor, 'features_esperadas') else None
+                                try:
+                                    if predictor.modelo_classificacao is not None and hasattr(predictor.modelo_classificacao, 'classes_'):
+                                        meta_info['classes'] = list(predictor.modelo_classificacao.classes_)
+                                except Exception:
+                                    pass
+
+                                # Importância das features (se disponível)
+                                try:
+                                    if predictor.modelo_classificacao is not None and hasattr(predictor.modelo_classificacao, 'feature_importances_'):
+                                        importances = predictor.modelo_classificacao.feature_importances_
+                                        feat_names = predictor.features_esperadas or X_encoded.columns.tolist()
+                                        df_imp = pd.DataFrame({'feature': feat_names, 'importance': importances})
+                                        df_imp = df_imp.sort_values('importance', ascending=False).head(20).set_index('feature')
+                                        st.markdown("**Top feature importances (classificador):**")
+                                        st.dataframe(df_imp, use_container_width=True)
+                                        meta_info['has_feature_importances'] = True
+                                except Exception:
+                                    meta_info['has_feature_importances'] = False
+
+                                st.json(meta_info)
+
+                            except Exception as e:
+                                st.warning(f"⚠️ Não foi possível gerar debug extra: {e}")
                     
                 except Exception as e:
                     st.error(f"❌ Erro ao fazer previsão: {e}")

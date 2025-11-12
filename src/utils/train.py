@@ -18,6 +18,7 @@ from sklearn.preprocessing import LabelEncoder
 import matplotlib.pyplot as plt
 import seaborn as sns
 import joblib
+import json
 import warnings
 from typing import Optional, Tuple, Dict
 from datetime import datetime
@@ -40,6 +41,7 @@ class WeatherModelTrainer:
         self.metrics = {}
         self.label_encoders = {}
         self.feature_names = []
+        self.feature_medians = {}  # Armazenar medianas de features
         
         # Obter diretórios do projeto
         self.project_root = Path(__file__).resolve().parent.parent
@@ -197,6 +199,11 @@ class WeatherModelTrainer:
         
         # Armazenar nomes das features
         self.feature_names = X.columns.tolist()
+        
+        # Calcular e armazenar medianas das features numéricas (para preenchimento de NaN no predict)
+        for col in X.columns:
+            if pd.api.types.is_numeric_dtype(X[col]):
+                self.feature_medians[col] = float(X[col].median())
         
         # Verificação final
         if len(X) == 0:
@@ -544,6 +551,82 @@ class WeatherModelTrainer:
         except Exception as e:
             self._log(f"❌ Erro inesperado ao salvar: {type(e).__name__}: {e}")
             return None
+
+    def salvar_encoders(self, nome: str = 'encoders') -> Optional[Path]:
+        """
+        Salva os LabelEncoders usados no pré-processamento (se houver)
+
+        Args:
+            nome: Nome do arquivo para salvar os encoders (sem extensão)
+
+        Returns:
+            Caminho do arquivo salvo ou None
+        """
+        caminho_enc = self.models_dir / f"{nome}.joblib"
+        try:
+            # Se não houver encoders, salvar dicionário vazio
+            joblib.dump(self.label_encoders if self.label_encoders else {}, caminho_enc)
+            if caminho_enc.exists() and caminho_enc.stat().st_size > 0:
+                self._log(f"✅ Encoders salvos em: {caminho_enc}")
+                return caminho_enc
+            else:
+                self._log("⚠️ Arquivo de encoders criado, mas está vazio")
+                return None
+        except Exception as e:
+            self._log(f"❌ Erro ao salvar encoders: {type(e).__name__}: {e}")
+            return None
+    
+    def salvar_metadados(self, nome: str = 'model_metadata.json') -> Optional[Path]:
+        """
+        Salva metadados do modelo (features, medianas, versão, data)
+        
+        Args:
+            nome: Nome do arquivo JSON
+            
+        Returns:
+            Caminho do arquivo salvo ou None
+        """
+        caminho_meta = self.models_dir / nome
+        try:
+            # Construir dicionário de metadados
+            metadata = {
+                'version': '1.0',
+                'created_at': datetime.now().isoformat(),
+                'feature_names': self.feature_names,
+                'feature_medians': self.feature_medians,
+                'n_features': len(self.feature_names),
+                'label_encoders_cols': list(self.label_encoders.keys()),
+                'metrics': {
+                    'classificacao': {
+                        k: (float(v) if isinstance(v, np.floating) else 
+                            int(v) if isinstance(v, np.integer) else v)
+                        for k, v in (self.metrics.get('classificacao', {}) or {}).items()
+                        if k not in ['X_test', 'y_test', 'y_pred', 'y_pred_proba', 'confusion_matrix', 'cv_scores']
+                    } if self.metrics.get('classificacao') else None,
+                    'regressao': {
+                        k: (float(v) if isinstance(v, np.floating) else 
+                            int(v) if isinstance(v, np.integer) else v)
+                        for k, v in (self.metrics.get('regressao', {}) or {}).items()
+                        if k not in ['X_test', 'y_test', 'y_pred', 'cv_scores']
+                    } if self.metrics.get('regressao') else None
+                }
+            }
+            
+            # Salvar JSON
+            with open(caminho_meta, 'w', encoding='utf-8') as f:
+                json.dump(metadata, f, indent=2, ensure_ascii=False)
+            
+            if caminho_meta.exists() and caminho_meta.stat().st_size > 0:
+                self._log(f"✅ Metadados salvos em: {caminho_meta}")
+                self._log(f"   • Features: {len(self.feature_names)}")
+                self._log(f"   • Medianas calculadas: {len(self.feature_medians)}")
+                return caminho_meta
+            else:
+                self._log("⚠️ Arquivo de metadados criado, mas está vazio")
+                return None
+        except Exception as e:
+            self._log(f"❌ Erro ao salvar metadados: {type(e).__name__}: {e}")
+            return None
     
     def salvar_relatorio(self, nome_arquivo: str = 'relatorio_treinamento.txt'):
         """Salva relatório detalhado do treinamento"""
@@ -637,6 +720,12 @@ def treinar_modelos(caminho_dados: str,
         
         # Salvar modelo
         caminho_modelo = trainer.salvar_modelo(model_class, 'modelo_classificacao')
+
+        # Salvar encoders usados durante o preparo (se existirem)
+        trainer.salvar_encoders()
+        
+        # Salvar metadados (features, medianas, métricas)
+        trainer.salvar_metadados()
         
         # Plotar gráficos
         if plotar:

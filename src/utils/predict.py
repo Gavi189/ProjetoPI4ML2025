@@ -7,6 +7,7 @@ Descrição: Carrega modelos treinados e faz previsões em dados novos
 import pandas as pd
 import numpy as np
 import joblib
+import json
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 import warnings
@@ -33,6 +34,8 @@ class WeatherPredictor:
         self.modelo_classificacao = None
         self.modelo_regressao = None
         self.features_esperadas = None
+        self.encoders = None
+        self.metadados = None  # Armazenar metadados do modelo (features, medianas, etc.)
         
         # Obter diretórios do projeto
         self.project_root = Path(__file__).resolve().parent.parent
@@ -45,6 +48,29 @@ class WeatherPredictor:
         
         if caminho_modelo_reg:
             self.carregar_modelo_regressao(caminho_modelo_reg)
+
+        # Tentar carregar encoders persistidos (se existirem)
+        enc_path = self.models_dir / 'encoders.joblib'
+        if enc_path.exists():
+            try:
+                self.encoders = joblib.load(enc_path)
+                self._log(f"📂 Encoders carregados: {len(self.encoders)}")
+            except Exception as e:
+                self._log(f"⚠️ Erro ao carregar encoders: {e}")
+                self.encoders = None
+        
+        # Tentar carregar metadados persistidos (features, medianas, etc.)
+        meta_path = self.models_dir / 'model_metadata.json'
+        if meta_path.exists():
+            try:
+                with open(meta_path, 'r', encoding='utf-8') as f:
+                    self.metadados = json.load(f)
+                self._log(f"📂 Metadados do modelo carregados")
+                self._log(f"   • Features esperadas: {self.metadados.get('n_features', 'N/A')}")
+                self._log(f"   • Versão: {self.metadados.get('version', 'N/A')}")
+            except Exception as e:
+                self._log(f"⚠️ Erro ao carregar metadados: {e}")
+                self.metadados = None
     
     def _log(self, message: str):
         """Imprime mensagem se verbose=True"""
@@ -128,21 +154,38 @@ class WeatherPredictor:
         
         # Codificar variáveis categóricas (estacao, periodo_dia, etc.)
         from sklearn.preprocessing import LabelEncoder
-        
+
         colunas_categoricas = df_work.select_dtypes(include=['object']).columns
         if len(colunas_categoricas) > 0:
             self._log(f"   🔤 Codificando {len(colunas_categoricas)} colunas categóricas...")
-            
+
             for col in colunas_categoricas:
-                if col in df_work.columns:
-                    try:
+                if col not in df_work.columns:
+                    continue
+                try:
+                    # Se encoders persistidos estiverem disponíveis, usar transform seguro
+                    if self.encoders and col in self.encoders:
+                        encoder = self.encoders[col]
+                        classes_set = set(map(str, encoder.classes_))
+
+                        def _map_val(v):
+                            s = str(v)
+                            if s in classes_set:
+                                return int(encoder.transform([s])[0])
+                            else:
+                                # Valor desconhecido -> codificar como -1 (tratado depois)
+                                return -1
+
+                        df_work[col] = df_work[col].astype(str).map(_map_val)
+                        self._log(f"      • {col}: usado encoder persistido ({len(encoder.classes_)} classes), valores desconhecidos -> -1")
+                    else:
                         le = LabelEncoder()
                         df_work[col] = le.fit_transform(df_work[col].astype(str))
-                        self._log(f"      • {col}: {len(le.classes_)} classes")
-                    except Exception as e:
-                        self._log(f"      ⚠️ Erro ao codificar {col}: {e}")
-                        # Remover coluna problemática
-                        df_work = df_work.drop(col, axis=1)
+                        self._log(f"      • {col}: {len(le.classes_)} classes (encoder criado no momento)")
+                except Exception as e:
+                    self._log(f"      ⚠️ Erro ao codificar {col}: {e}")
+                    # Remover coluna problemática
+                    df_work = df_work.drop(col, axis=1)
         
         if self.features_esperadas is None:
             self._log("   ⚠️ Features esperadas não definidas. Usando todas as colunas numéricas.")
@@ -186,8 +229,20 @@ class WeatherPredictor:
         # Preencher NaN com 0
         nan_count = df_aligned.isna().sum().sum()
         if nan_count > 0:
-            self._log(f"   💉 Preenchendo {nan_count} valores NaN com 0...")
-            df_aligned = df_aligned.fillna(0)
+            self._log(f"   💉 Preenchendo {nan_count} valores NaN...")
+            
+            # Se metadados disponível, usar medianas persistidas; senão usar 0
+            if self.metadados and 'feature_medians' in self.metadados:
+                feature_medians = self.metadados['feature_medians']
+                for col in df_aligned.columns:
+                    if df_aligned[col].isna().any():
+                        valor_fill = feature_medians.get(col, 0)
+                        df_aligned[col] = df_aligned[col].fillna(valor_fill)
+                        if valor_fill != 0:
+                            self._log(f"      • {col}: preenchido com mediana {valor_fill:.2f}")
+            else:
+                df_aligned = df_aligned.fillna(0)
+                self._log(f"      • Preenchimento com 0 (medianas não disponível)")
         
         # Verificação final: garantir que tudo é numérico
         dtypes_final = df_aligned.dtypes.value_counts()
