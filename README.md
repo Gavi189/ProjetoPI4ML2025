@@ -1,4 +1,4 @@
-# 🌦️ Sistema de Previsão Meteorológica com Machine Learning
+# 🌦️ Sistema de Previsão Meteorológica com Machine Learning (ClimaPrev)
 
 ![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)
 ![Streamlit](https://img.shields.io/badge/Streamlit-1.31.0-red.svg)
@@ -8,7 +8,7 @@ Sistema completo de previsão meteorológica usando Machine Learning, desenvolvi
 
 ## 📸 Screenshots
 
-[![alt text](image-2.png)]
+![alt text](image-2.png)
 
 ## 🎯 Funcionalidades
 
@@ -241,7 +241,7 @@ git push origin feature/nova-funcionalidade
 }
 
 ```
-4. ** **: abra o arquivo app.py, adicione seus breakpoints e clique em Start Debugging 
+4. **Visual Studio Code > app.py**: abra o arquivo app.py, adicione seus breakpoints e clique em Start Debugging 
 ![alt text](image-1.png)
 
 ### Adicionar Novas Features
@@ -308,11 +308,11 @@ Este projeto está sob a licença MIT. Ver `LICENSE` para mais detalhes.
 - GitHub:[@Gavi189](https://github.com/Gavi189)
          [@gabrielkaique2](https://github.com/gabrielkaique2)
          [@simone2013](https://github.com/simone2013)
-- Email: 2211273@aluno.univesp.br - Gabriel Kaique de Areal Rodrigues
-         2215969@aluno.univesp.br - Gabriel Valério Andrade Rodrigues
-         2215890@aluno.univesp.br - Grace Kelly Coracin
-         2229846@aluno.univesp.br - Leandro Junior Gaspar de Oliveira
-         2219233@aluno.univesp.br - Simone Pereira do Nascimento
+- Email: 2211273@aluno.univesp.br - Gabriel Kaique de Areal Rodrigues  
+         2215969@aluno.univesp.br - Gabriel Valério Andrade Rodrigues  
+         2215890@aluno.univesp.br - Grace Kelly Coracin  
+         2229846@aluno.univesp.br - Leandro Junior Gaspar de Oliveira  
+         2219233@aluno.univesp.br - Simone Pereira do Nascimento  
 
 ## 🙏 Agradecimentos
 
@@ -326,11 +326,11 @@ Encontrou um bug? Tem uma sugestão?
 
 - 🐛 [Abra uma Issue](https://github.com/seu-usuario/weather-prediction/issues)
 - 💬 [Discussões](https://github.com/seu-usuario/weather-prediction/discussions)
-- 📧 Email: 2211273@aluno.univesp.br - Gabriel Kaique de Areal Rodrigues
-        2215969@aluno.univesp.br - Gabriel Valério Andrade Rodrigues
-        2215890@aluno.univesp.br - Grace Kelly Coracin
-        2229846@aluno.univesp.br - Leandro Junior Gaspar de Oliveira
-        2219233@aluno.univesp.br - Simone Pereira do Nascimento
+- 📧 Email: 2211273@aluno.univesp.br - Gabriel Kaique de Areal Rodrigues  
+        2215969@aluno.univesp.br - Gabriel Valério Andrade Rodrigues  
+        2215890@aluno.univesp.br - Grace Kelly Coracin  
+        2229846@aluno.univesp.br - Leandro Junior Gaspar de Oliveira  
+        2219233@aluno.univesp.br - Simone Pereira do Nascimento  
 ---
 
 <div align="center">
